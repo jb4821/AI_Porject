@@ -4,6 +4,7 @@ const mongoose = require('mongoose');
 const bodyParser = require('body-parser');
 const cors = require('cors');
 const AITool = require('./models/AITool');
+const importToolsRoute = require('./routes/importTools');
 
 const app = express();
 const PORT = process.env.PORT || 5000;
@@ -39,6 +40,8 @@ app.get('/api/tools', async (req, res) => {
     res.status(500).json({ error: err.message });
   }
 });
+
+app.use('/api', importToolsRoute);
 
 app.listen(PORT, () => {
   console.log(`Server running on port ${PORT}`);
