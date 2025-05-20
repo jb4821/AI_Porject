@@ -8,7 +8,8 @@ const AIToolSchema = new mongoose.Schema({
   websiteLink: { type: String },
   imageLink: { type: String },
   features: { type: String },
-  sharableLink: { type: String }
+  sharableLink: { type: String },
+  reference: {type: String}
 });
 
 module.exports = mongoose.model('AITool', AIToolSchema);
