@@ -9,7 +9,8 @@ const AIToolSchema = new mongoose.Schema({
   imageLink: { type: String },
   features: { type: String },
   sharableLink: { type: String },
-  reference: {type: String}
+  reference: { type: String },
+  subscription : { type: String }
 });
 
 module.exports = mongoose.model('AITool', AIToolSchema);

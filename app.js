@@ -34,8 +34,36 @@ app.post('/api/tools', async (req, res) => {
 // GET API - Fetch all AI tools
 app.get('/api/tools', async (req, res) => {
   try {
-    const tools = await AITool.find();
-    res.json(tools);
+    const { name, category, subscription, page = 1, limit = 10 } = req.query;
+
+    let query = {};
+
+    if (name) {
+      query.name = { $regex: name, $options: 'i' };
+    }
+
+    if (category) {
+      query.category = { $regex: category, $options: 'i' }; // updated for loose match
+    }
+
+    if (subscription) {
+      query.subscription = subscription;
+    }
+
+    const skip = (parseInt(page) - 1) * parseInt(limit);
+
+    const tools = await AITool.find(query)
+      .skip(skip)
+      .limit(parseInt(limit));
+
+    const total = await AITool.countDocuments(query);
+
+    res.json({
+      data: tools,
+      total,
+      page: parseInt(page),
+      totalPages: Math.ceil(total / parseInt(limit))
+    });
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
