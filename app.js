@@ -131,8 +131,15 @@ app.get('/api/categories', async (req, res) => {
   }
 });
 
+// Lightweight health check endpoint
+app.get('/ping', (req, res) => {
+  res.status(200).json({ message: 'pong' });
+});
+
 app.use('/api', importToolsRoute);
 
 app.listen(PORT, () => {
   console.log(`Server running on port ${PORT}`);
 });
+
+require('./pingCron');
