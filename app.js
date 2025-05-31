@@ -4,6 +4,7 @@ const mongoose = require('mongoose');
 const bodyParser = require('body-parser');
 const cors = require('cors');
 const AITool = require('./models/AITool');
+const Category = require('./models/Category');
 const importToolsRoute = require('./routes/importTools');
 
 const app = express();
@@ -22,11 +23,26 @@ mongoose.connect(process.env.MONGO_URI, {
 
 // POST API - Add a new AI tool
 app.post('/api/tools', async (req, res) => {
+  const { category, ...toolData } = req.body;
+
   try {
-    const tool = new AITool(req.body);
+    const categoryList = category.split(',').map(cat => cat.trim());
+
+    // For each category, check and insert if not exists
+    for (const catName of categoryList) {
+      const exists = await Category.findOne({ name: catName });
+      if (!exists) {
+        await new Category({ name: catName }).save();
+      }
+    }
+
+    // Save the tool with original category string
+    const tool = new AITool({ ...toolData, category });
     const savedTool = await tool.save();
+
     res.status(201).json(savedTool);
   } catch (err) {
+    console.error(err);
     res.status(400).json({ error: err.message });
   }
 });
@@ -66,6 +82,16 @@ app.get('/api/tools', async (req, res) => {
     });
   } catch (err) {
     res.status(500).json({ error: err.message });
+  }
+});
+
+app.get('/api/categories', async (req, res) => {
+  try {
+    const categories = await Category.find().sort({ name: 1 }); // Optional: sort alphabetically
+    res.status(200).json(categories);
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: 'Failed to fetch categories' });
   }
 });
 
