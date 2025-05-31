@@ -26,16 +26,27 @@ app.post('/api/tools', async (req, res) => {
   const { category, ...toolData } = req.body;
 
   try {
-    const categoryList = category.split(',').map(cat => cat.trim());
+    const categoryList = category
+      .split(',')
+      .map(cat => cat.trim())
+      .filter(cat => cat.length > 0);
 
     for (const catName of categoryList) {
-      const exists = await Category.findOne({ name: catName });
-      if (!exists) {
-        await new Category({ name: catName }).save();
+      const existingCategory = await Category.findOne({
+        name: catName
+      }).collation({ locale: 'en', strength: 2 }); // Case-insensitive match
+
+      if (!existingCategory) {
+        await new Category({ name: catName }).save(); // Save in original case
       }
     }
 
-    const tool = new AITool({ ...toolData, category });
+    // Store original-case categories (you can also store as an array if preferred)
+    const tool = new AITool({
+      ...toolData,
+      category: categoryList.join(',') // Original case
+    });
+
     const savedTool = await tool.save();
 
     res.status(201).json({
@@ -54,32 +65,6 @@ app.post('/api/tools', async (req, res) => {
   }
 });
 
-// app.post('/api/tools', async (req, res) => {
-//   const { category, ...toolData } = req.body;
-
-//   try {
-//     const categoryList = category.split(',').map(cat => cat.trim());
-
-//     // For each category, check and insert if not exists
-//     for (const catName of categoryList) {
-//       const exists = await Category.findOne({ name: catName });
-//       if (!exists) {
-//         await new Category({ name: catName }).save();
-//       }
-//     }
-
-//     // Save the tool with original category string
-//     const tool = new AITool({ ...toolData, category });
-//     const savedTool = await tool.save();
-
-//     res.status(201).json(savedTool);
-//   } catch (err) {
-//     console.error(err);
-//     res.status(400).json({ error: err.message });
-//   }
-// });
-
-
 // GET API - Fetch all AI tools
 
 app.get('/api/tools', async (req, res) => {
@@ -97,7 +82,7 @@ app.get('/api/tools', async (req, res) => {
     }
 
     if (subscription) {
-      query.subscription = subscription;
+      query.subscription = { $regex: `^${subscription}$`, $options: 'i' }; // Case-insensitive exact match
     }
 
     const skip = (parseInt(page) - 1) * parseInt(limit);
@@ -125,43 +110,6 @@ app.get('/api/tools', async (req, res) => {
   }
 });
 
-// app.get('/api/tools', async (req, res) => {
-//   try {
-//     const { name, category, subscription, page = 1, limit = 10 } = req.query;
-
-//     let query = {};
-
-//     if (name) {
-//       query.name = { $regex: name, $options: 'i' };
-//     }
-
-//     if (category) {
-//       query.category = { $regex: category, $options: 'i' }; // updated for loose match
-//     }
-
-//     if (subscription) {
-//       query.subscription = subscription;
-//     }
-
-//     const skip = (parseInt(page) - 1) * parseInt(limit);
-
-//     const tools = await AITool.find(query)
-//       .skip(skip)
-//       .limit(parseInt(limit));
-
-//     const total = await AITool.countDocuments(query);
-
-//     res.json({
-//       data: tools,
-//       total,
-//       page: parseInt(page),
-//       totalPages: Math.ceil(total / parseInt(limit))
-//     });
-//   } catch (err) {
-//     res.status(500).json({ error: err.message });
-//   }
-// });
-
 //get categories
 app.get('/api/categories', async (req, res) => {
   try {
@@ -182,16 +130,6 @@ app.get('/api/categories', async (req, res) => {
     });
   }
 });
-
-// app.get('/api/categories', async (req, res) => {
-//   try {
-//     const categories = await Category.find().sort({ name: 1 }); // Optional: sort alphabetically
-//     res.status(200).json(categories);
-//   } catch (err) {
-//     console.error(err);
-//     res.status(500).json({ error: 'Failed to fetch categories' });
-//   }
-// });
 
 app.use('/api', importToolsRoute);
 
