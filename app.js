@@ -69,12 +69,18 @@ app.post('/api/tools', async (req, res) => {
 
 app.get('/api/tools', async (req, res) => {
   try {
-    const { name, category, subscription, page = 1, limit = 10 } = req.query;
+    const { search, category, subscription, page = 1, limit = 10 } = req.query;
 
     let query = {};
 
-    if (name) {
-      query.name = { $regex: name, $options: 'i' };
+    // OR condition for search
+    if (search) {
+      query.$or = [
+        { name: { $regex: search, $options: 'i' } },
+        { subtitle: { $regex: search, $options: 'i' } },
+        { category: { $regex: search, $options: 'i' } },
+        { features: { $regex: search, $options: 'i'}}
+      ];
     }
 
     if (category) {
