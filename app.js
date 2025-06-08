@@ -3,6 +3,7 @@ const express = require('express');
 const mongoose = require('mongoose');
 const bodyParser = require('body-parser');
 const cors = require('cors');
+const axios = require('axios');
 const AITool = require('./models/AITool');
 const Category = require('./models/Category');
 const importToolsRoute = require('./routes/importTools');
@@ -141,21 +142,27 @@ app.get('/api/categories', async (req, res) => {
 
 app.get('/api/proxy', async (req, res) => {
   const imageUrl = req.query.url;
+
+  if (!imageUrl) {
+    return res.status(400).send('Missing image URL');
+  }
+
   try {
     const response = await axios.get(imageUrl, {
-      responseType: 'arraybuffer',
+      responseType: 'stream', // Stream ensures binary image is sent correctly
       headers: {
-        'User-Agent': req.headers['user-agent'] || '',
-        // Spoof Referer if needed
-        Referer: 'https://www.google.com',
-      },
+        'User-Agent': req.headers['user-agent'] || 
+          'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/137 Safari/537.36',
+        'Referer': 'https://www.google.com',
+        'Accept': 'image/avif,image/webp,image/apng,image/svg+xml,image/*,*/*;q=0.8'
+      }
     });
 
-    res.set('Content-Type', response.headers['content-type']);
-    res.send(response.data);
+    res.setHeader('Content-Type', response.headers['content-type'] || 'image/png');
+    response.data.pipe(res); // Stream the image to the browser
   } catch (error) {
     console.error('Proxy failed:', error.message);
-    res.status(500).send('Image load failed');
+    res.status(500).send('Image load failed: ' + error.message);
   }
 });
 
