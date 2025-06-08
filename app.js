@@ -137,6 +137,28 @@ app.get('/api/categories', async (req, res) => {
   }
 });
 
+// /api/proxy?url=https://target-image-url.png
+
+app.get('/api/proxy', async (req, res) => {
+  const imageUrl = req.query.url;
+  try {
+    const response = await axios.get(imageUrl, {
+      responseType: 'arraybuffer',
+      headers: {
+        'User-Agent': req.headers['user-agent'] || '',
+        // Spoof Referer if needed
+        Referer: 'https://www.google.com',
+      },
+    });
+
+    res.set('Content-Type', response.headers['content-type']);
+    res.send(response.data);
+  } catch (error) {
+    console.error('Proxy failed:', error.message);
+    res.status(500).send('Image load failed');
+  }
+});
+
 // Lightweight health check endpoint
 app.get('/ping', (req, res) => {
   res.status(200).json({ message: 'pong' });
