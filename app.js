@@ -219,8 +219,7 @@ app.delete('/api/news/:id', async (req, res) => {
     res.status(200).json({
       code: 200,
       status: "success",
-      message: "News deleted successfully",
-      data: [deletedNews]
+      message: "News deleted successfully"
     });
   } catch (err) {
     console.error(err);
