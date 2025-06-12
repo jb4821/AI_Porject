@@ -6,6 +6,7 @@ const cors = require('cors');
 const axios = require('axios');
 const AITool = require('./models/AITool');
 const Category = require('./models/Category');
+const News = require('./models/News');
 const importToolsRoute = require('./routes/importTools');
 
 const app = express();
@@ -134,6 +135,99 @@ app.get('/api/categories', async (req, res) => {
       code: 500,
       status: "error",
       message: "Failed to fetch categories",
+    });
+  }
+});
+
+//post news
+app.post('/api/news', async (req, res) => {
+  const { title, description, author, image, reference, date } = req.body;
+
+  try {
+    const news = new News({ title, description, author, image, reference, date });
+    const savedNews = await news.save();
+
+    res.status(201).json({
+      code: 201,
+      status: "success",
+      message: "News added successfully",
+      data: [savedNews]
+    });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({
+      code: 500,
+      status: "error",
+      message: err.message,
+    });
+  }
+});
+
+//get news
+app.get('/api/news', async (req, res) => {
+  try {
+    const { search, page = 1, limit = 10 } = req.query;
+
+    let query = {};
+
+    if (search) {
+      query.$or = [
+        { title: { $regex: search, $options: 'i' } },
+        { description: { $regex: search, $options: 'i' } },
+        { author: { $regex: search, $options: 'i' } }
+      ];
+    }
+
+    const skip = (parseInt(page) - 1) * parseInt(limit);
+    const newsList = await News.find(query).sort({ date: -1 }).skip(skip).limit(parseInt(limit));
+    const total = await News.countDocuments(query);
+
+    res.status(200).json({
+      code: 200,
+      status: "success",
+      message: "News fetched successfully",
+      data: newsList,
+      pagination: {
+        total,
+        page: parseInt(page),
+        totalPages: Math.ceil(total / parseInt(limit))
+      }
+    });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({
+      code: 500,
+      status: "error",
+      message: err.message,
+    });
+  }
+});
+
+//delete news
+app.delete('/api/news/:id', async (req, res) => {
+  try {
+    const deletedNews = await News.findByIdAndDelete(req.params.id);
+
+    if (!deletedNews) {
+      return res.status(404).json({
+        code: 404,
+        status: "error",
+        message: "News not found",
+      });
+    }
+
+    res.status(200).json({
+      code: 200,
+      status: "success",
+      message: "News deleted successfully",
+      data: [deletedNews]
+    });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({
+      code: 500,
+      status: "error",
+      message: err.message,
     });
   }
 });
