@@ -179,7 +179,7 @@ app.get('/api/news', async (req, res) => {
     }
 
     const skip = (parseInt(page) - 1) * parseInt(limit);
-    const newsList = await News.find(query).sort({ date: -1 }).skip(skip).limit(parseInt(limit));
+    const newsList = await News.find(query).sort({ date: -1, _id: -1 }).skip(skip).limit(parseInt(limit));
     const total = await News.countDocuments(query);
 
     res.status(200).json({
